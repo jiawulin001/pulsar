@@ -400,6 +400,14 @@ public class AdminApiTest extends MockedPulsarServiceBaseTest {
             throw e;
         }
     }
+    
+    @Test
+    public void testIssue6887() throws Exception{
+        conf.setTtlDurationDefaultInSeconds(3600);
+        admin.namespaces().createNamespace("internal/test44");
+        int seconds = admin.namespaces().getPolicies("internal/test44").message_ttl_in_seconds;
+        assertEquals(seconds,3600);
+    }
 
     @Test
     public void brokers() throws Exception {
