@@ -101,11 +101,14 @@ public class AsyncHttpConnector implements Connector {
         confBuilder.setReadTimeout(readTimeoutMs);
         confBuilder.setUserAgent(String.format("Pulsar-Java-v%s", PulsarVersion.getVersion()));
         confBuilder.setRequestTimeout(requestTimeoutMs);
+        confBuilder.setIoThreadsCount(conf.getNumIoThreads());
         confBuilder.setKeepAliveStrategy(new DefaultKeepAliveStrategy() {
             @Override
-            public boolean keepAlive(Request ahcRequest, HttpRequest request, HttpResponse response) {
+            public boolean keepAlive(InetSocketAddress remoteAddress, Request ahcRequest,
+                                     HttpRequest request, HttpResponse response) {
                 // Close connection upon a server error or per HTTP spec
-                return (response.status().code() / 100 != 5) && super.keepAlive(ahcRequest, request, response);
+                return (response.status().code() / 100 != 5)
+                       && super.keepAlive(remoteAddress, ahcRequest, request, response);
             }
         });
 
@@ -237,8 +240,9 @@ public class AsyncHttpConnector implements Connector {
                                             retries - 1);
                                 } else {
                                     resultFuture.completeExceptionally(
-                                            new RetryException("Could not complete the operation. Number of retries "
-                                            + "has been exhausted.", throwable));
+                                        new RetryException("Could not complete the operation. Number of retries "
+                                            + "has been exhausted. Failed reason: " + throwable.getMessage(),
+                                            throwable));
                                 }
                             }
                         } else {
